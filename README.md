@@ -1,4 +1,4 @@
 Documentation
 =============
 
-Use this repository's Wiki to document information about your team.
+This repository's Wiki, https://github.com/plantbreeding/documentation/wiki, is used for summaries of our discussions in the weekly conference calls and other get-togethers.
