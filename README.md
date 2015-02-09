@@ -1,7 +1,7 @@
 Documentation
 =============
 
-The Plant Breeding API is documented on the Apiary site, and in the Github repository wikis. 
+The Plant Breeding API is documented on the Apiary site and in the Github repository wikis. 
 
 ##Table of contents
 * [Meeting Notes](https://github.com/plantbreeding/documentation/wiki/Meeting-notes)
