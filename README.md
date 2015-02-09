@@ -1,5 +1,5 @@
-Documentation
-=============
+Plant Breeding API
+==================
 
 The Plant Breeding API is documented on the Apiary site and in the Github repository wikis. 
 
