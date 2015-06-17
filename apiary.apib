@@ -1,0 +1,829 @@
+FORMAT: 1A
+
+# Dave's Plant Breeding API
+The Breeding API specifies a standard interface for plant phenotype/genotype databases to serve 
+their data to crop breeding applications. It is a <i>shared</i>, <i>open</i> API, to be
+used by all data providers and data consumers who wish to participate. Initiated in May 2014, it is
+currently in an actively developing state, so now is the time for potential participants to help
+shape the specifications to ensure their needs are addressed. The listserve for discussions and 
+announcements is at http://mail2.sgn.cornell.edu/cgi-bin/mailman/listinfo/plant-breeding-api .
+
+API requests are structured as "\<server\>/brapi/v1/", 
+where "v1" is the version number of the API, followed by the command.  
+Example: /brapi/v1/markerprofile/2939  
+Additional documentation is in the [GitHub wiki](https://github.com/plantbreeding/). 
+See especially the [Best Practices and Conventions]
+(https://github.com/plantbreeding/documentation/wiki/Best-Practices-and-Conventions).
+
+API call categories:  
+Scope: "CORE", "PHENOTYPING", "GENOTYPING", "OTHER".  
+Status: "ACCEPTED", "IN DISCUSSION", "SUGGESTED".
+
+# Group Germplasm
+Note: The plural of germplasm is germplasm. (no "s")
+
+## Germplasm ID [/brapi/v1/germplasm?name={name}&matchMethod={matchMethod}&include={synonyms}&pageSize={pageSize}&page={page}]
+Other services' requests use the server's internal `germplasmId`. This service provides the germplasmId.
+For the requested name or synonym, returns the internal identifier of that germplasm line.
+- If there is none, the empty list is returned.  
+- If there is one or more than one match, returns an array of all matching germplasmIds and their text representations.
+
+Scope: CORE.  Status: IN DISCUSSION.
+### Germplasm ID by name [GET]
++ Parameters
+    + name (required, text, `mor%`) ... The name or synonym.
+    + matchMethod (optional, string, `wildcard`) ... Whether to restrict the search to exact (case insensitive) or wildcard 
+    matches. Possible values are 'exact', 'wildcard'. Wildcard uses standard SQL wildcards (percent sign and underscore). Default is exact.
+    + include (optional, string, `synonyms`) ... Whether to include synonyms in the output. Other possible values TBD.
+    + pageSize (optional, integer, `1000`) ... The size of the pages to be returned. Default is `1000`.
+    + page (optional, integer, `10`) ... Which result page is requested
++ Response 200 (application/json)
+
+        [    
+            "pagination" : { pageSize: 1000, currentPage: 10, totalCount: 27338, totalPages: 28 },
+            [
+                { 
+                    "queryName": "mor%",
+                    "uniqueName": "MOREX",
+                    "synonyms" : [ "M25", "CIHO15773" ],
+                    "germplasmId": 382
+                },
+                {
+                    "queryName": "mor%",
+                    "uniqueName": "MORGENROT",
+                    "synonyms" : [ ],
+                    "germplasmId": 383
+                }
+            ]
+        ]    
+        
+## Germplasm details [/brapi/v1/germplasm/{id}]
+Scope: CORE. Status: IN DISCUSSION.  
+###### Response data types
+|Variable|Datatype|Description|Required|  
+|------|------|------|:-----:|
+|germplasmID|integer||Y|
+|germplasmName|string|Unique identifier|Y|
+|synonyms|array of string|||
+|taxonID|integer|E.g. species, crop||
+|breedingProgramId|integer|Or genebank if collected from the wild||
+
+### Germplasm details by id [GET]
++ Parameters
+    + id (required, number, `382`) ... the internal id of the germplasm
++ Response 200 (application/json)
+
+        { 
+            "germplasmId": 382,
+            "germplasmName": "MOREX",
+            "synonyms": [ "M25", "CIHO15773" ],
+            "taxonId": 3,
+            "breedingProgramId": 18   
+        }
+        
+## Germplasm pedigree [/brapi/v1/germplasm/{id}/pedigree]
+pedigreeString: text representation of the pedigree in [Purdy notation]
+(http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html).  
+Scope: OTHER. Status: IN DISCUSSION.
+### Germplasm pedigree by id [GET]
++ Parameters
+    + id (required, number, `382`) ... the internal id of the germplasm
++ Response 200 (application/json)
+    
+        { 
+            "germplasmId": 382,
+            "pedigreeString" : "Cree / Bonanza",
+            "parent1Id" : 166,
+            "parent2Id" : 143
+        }
+
+## Germplasm markerprofiles  [/brapi/v1/germplasm/{id}/markerprofiles]
+Retrieve the markerProfileIds for a given Germplasm ID  
+Scope: GENOTYPING. Status: IN DISCUSSION.
+### Markerprofiles by germplasmId [GET]
++ Response 200 (application/json)
+        
+        {
+            germplasmId : 39393,
+            markerProfiles : [
+                3939, 4484, 3993
+            ],  ...
+        }
+
+## Phenotypes [/brapi/v1/germplasm/{id}/traits/{traitid}]
+Scope: CORE.
+Status: SUGGESTED.
+
+Retrieve phenotype result values for a specific germplasm and specific trait, for all studies
+
+### Retrieve phenotypes for germplasm and trait [GET]
+
++ Parameters
+    + id (required, number, `1`) ... Numeric `id` of the experiment.
+    + traitid (required, the numeric id of a trait)
+    
++ Response 200 (application/json)
+    
+        { 
+            {
+                plotId: 'xyz',
+                germplasmId : 'AC938',
+                trait1 : 32,
+            },
+            {   plotId: 'abc',
+                germplasmId: 'ZA493',
+                trait1  : 33,
+            }
+        }
+           
+
+
+# Group Markerprofiles
+
+For the purposes of this API, the definition of markerprofile is *the allele calls for a specified germplasm line, for all markers, for a specified set of genotyping experiments or all experiments.*
+
+Basic concepts in the **Breeding API**:
+
+- *markerprofile*: A set of marker scores for a specific extract from a specific germplasm.
+- *extract* : a preparation from a germplasm for an analysis. 
+- *germplasm*: a single genetic entity (cultivar, variety, accession, breeding line) used for analysis
+- *marker*: a DNA sequence polymorphism, potentially localized to a single genomic location
+- *allele*: one of the two possible states of a marker in each haploid chromosome complement of a specified germplasm, as determined in a specified experiment. A diploid organism has two alleles per marker.
+- *missing*: a germplasm/marker/experiment combination for which no allele result is available, whether it was tested for or not
+
+## Count [/brapi/v1/markerprofiles?germplasm={germplasmId}&extract={extractId}]
+Scope: GENOTYPING.
+Status: IN DISCUSSION.
+For the requested Germplasm Id and/or Extract Id, returns the Markerprofile Id and number of non-missing allele calls 
+(marker/allele pairs).
+[Example] (http://malt.pw.usda.gov/t3/wheatplus/brapi/v1/markerprofile/993_83/count?analysisMethod=GoldenGate)
+### Count of Markers in Markerprofile [GET]
++ Parameters
+    + germplasmId (optional, number, `993`) ... The server's internal id for the Germplasm ID, as returned by the **Find markerprofile by Germplasm** service.
+    + extractId (optional, number, `84`) ... The server's internal id for the ExtractId
++ Response 200 (application/json)
+
+        {   
+                "markerProfileId": 993,
+                "germplasmId" : 2374,
+                "extractId" : 3939,
+                "analysisMethod": "GoldenGate",
+                "resultCount": 1470
+        },{
+                "markerProfileId": 994,
+                "germplasmId" : 2374,
+                "extractId" : 3939,
+                "analysisMethod": "GBS",
+                "resultCount": 1470
+        }
+
+## Markerprofile data [/brapi/v1/markerprofiles/{id}?page=&pageSize= ]
+Scope: GENOTYPING.
+Status: IN DISCUSSION.
+For the requested markerprofile ID, returns the allele call for each marker. 
+   
+**Allele encodings**
+
+- Codominant markers such as SNPs: AA or BB for homozygotes, AB for 
+heterozygotes
+- Dominant markers such as DArTs: 1 for present, 0 for absent
+
+**Open issue:**
+The pages of data will need to be sorted sensibly in order for the
+requested page to be delivered consistently.  By map or genome position?
+Alphabetically?
+###### Response data types
+|Variable|Datatype|Description|Required|  
+|------|------|------|:-----:|
+|markerprofileId|string|Unique in the database. Can be a catenation of unique IDs for germplasm and extract.|Y|
+|germplasmId|integer||Y|
+|extractId|integer||Y|
+|analysisMethod|string|||
+|encoding|string|list of all possible scores|Y|
+|data|object|array of marker-name/score pairs|Y|
+|pagination|object|pageSize, currentPage, totalCount, totalPages|Y|
+
+### Alleles By markerprofile Id [GET]
++ Parameters
+    + id (required, number, `993`) ... The server's internal id for the germplasm line, as returned by the **Find Germplasm by Name** service.
+    + pageSize (optional, number, `10000`) ... The number of allele call results (marker/allele pairs) to be returned in the response. If multiple experiments are requested, some responses will contain the last results from one experiment followed by the first results from the next.
+    + page (optional, number, `1`) ... Required if `pageSize` is given; and requires that `pageSize` be given. The first page is 1, not 0.
+
++ Response 200 (application/json)
+
+        {
+            "pagination" : { pageSize: 30, currentPage: 39, totalCount: 48484939, totalPages:34948 },
+            "germplasmId": 993,
+            "extractId" : 38383, 
+            "markerprofileId": 37484,
+            "analysisMethod": "GBS-Pst1",
+            "encoding": "AA,BB,AB",
+            "data": { "marker1": "AA", "marker2":"AB", ... },
+        }
+
+## Markerprofile data [/brapi/v1/markerprofiles ]
+Scope: GENOTYPING.
+Status: IN DISCUSSION.
+
+### Store markerprofile Id [POST]
+
++ Body
+
+        {
+            "extractId" : 38383, 
+            "markerprofileId": 37484,
+            "analysisMethod": "GBS-Pst1",
+            "encoding": "AA,BB,AB",
+            "data": { "marker1": "AA", "marker2":"AB", ... },
+        }
+
++ Response 200 (application/json)
+
+        { 
+            "germplasmId" : 994
+        }
+
+
+# Group Study
+
+API to retrieve list and details of studies or trials
+
+[GitHub project](https://github.com/plantbreeding/field-data-collection)
+
+Please add your API implementation detail on [GitHub project wiki page](https://github.com/plantbreeding/field-data-collection/wiki/API-Implementations)
+
+## List Study Summaries [/brapi/v1/studies?program={program}]
+Scope: CORE.
+Status: IN DISCUSSION.
+
+Get list of studies
+TO DO: Probably needs pagination information. 
+
+### List of study summaries [GET]
++ Parameters
+    + program (optional, string, `1`) ... Program filter to only return studies associated with given program code? name? id?. Could perhaps be looked up by looking at logged in users associations.
++ Response 200 (application/json)
+
+        [
+            {
+                studyId: "1",
+                studyType: "NURSERY",
+                name: "Nursery XYZ",
+                objective: "Generate more seeds",
+                programName: "TCAP",
+                startDate: "2014-08-01",
+                keyContact: "Mr. Plant Breeder A",
+                locationName: "Ibadan",
+                designType: "RCBD"
+            },
+            {
+                studyId : "2",
+                studyType: "TRIAL",
+                name: "Trial ABC",
+                objective: "Test draught resistence of Maize in Africa",
+                programName: "CIMMYT",
+                startDate: "2014-08-01",
+                keyContact: "Mr. Plant Breeder B",
+                locationName: "Ibadan2",
+                designType: "RCBD"
+            }
+        ]
+        
+## Study Details [/brapi/v1/studies/{id}]
+Scope: CORE.
+Status: IN DISCUSSION.
+
+Retrieve the details of the study required for field data collection
+
+### Retrieve study details [GET]
++ Parameters
+    + id (required, number, `1`) ... Numeric `id` of the experiment.
++ Response 200 (application/json)
+    
+        {
+            studyId: "1",
+            studyType: "trial",
+            name: "Fieldbook A",
+            objective: "Generate seeds",
+            startDate: "2014-08-01",
+            keyContact: "Mr. Plant Breeder",
+            locationName: "Ibadan",
+            designType: "RCBD",
+            traits: [ 'trait1', 'trait2'...],
+            designDetails: [ 
+                { 
+                  plotId: "11",
+                  blockId: "1",
+                  rowId: "20",
+                  columnId: "22",
+                  replication: "1",
+                  checkId: "0",
+                  germplasmId: "143",
+                  germplasmName: "ZIPA_68"
+                }, ...
+            ]
+        },
+ 
+## Study Details [/brapi/v1/studies/{id}/layout]
+Scope: CORE.
+Status: SUGGESTED.
+
+Retrieve the plot layout of the study with id {id}.
+
+### Retrieve study details [GET]
++ Parameters
+    + id (required, number, `1`) ... Numeric `id` of the experiment.
++ Response 200 (application/json)
+    
+        {
+            "studyId": 1,
+            { 
+                "plotId": 11,
+                "plotName": "ZIPA_68_Ibadan_2014",
+                "blockNumber": 1,
+                "rowNumber": 20,
+                "columnNumber": 22,
+                "replicate": 1,
+                "isCheck": "T",
+                "germplasmId": 143,
+                "germplasmName": "ZIPA_68"
+            }, ...
+            
+        },
+ 
+
+## Phenotypes [/brapi/v1/studies/{id}/traits/{traitid}]
+Scope: CORE.
+Status: SUGGESTED.
+
+Retrieve phenotype result values for a specific study and trait, for all germplasm lines
+
+### Retrieve phenotypes for study and trait [GET]
+
++ Parameters
+    + id (required, number, `1`) ... Numeric `id` of the experiment.
+    + traitid (required, the numeric id of a trait)
+    
++ Response 200 (application/json)
+    
+        [ 
+            {
+                "plotId": 'xyz',
+                "germplasmId" : 'AC938',
+                "phenotypes" : [ {  "traitId" : 32, "value": 33 }, { "traitId": 33, "value": 84 } ]
+            },
+            {   "plotId": 'abc',
+                "germplasmId": 'ZA493',
+                "phenotypes" : [ {  "traitId" : 32, "value": 33 }, { "traitId": 33, "value": 84 } ]
+                 ...
+            }
+        ]
+            
+# Group Phenotypes
+
+
+API to retrieve data (phenotype, environment variables) from studies
+
+
+
+## Phenotypes dataset [/brapi/v1/phenotypes?factorModality=lowInput&germplasmGenus=&germplasmLotURI=&germplasmURI=http://data.inra.fr/accession/234Col342&germplasmName=charger,isengrain, ...&germplasmSpecies=Triticum&panel=diversitypanel1&collection=none&traits=CO_321:000034,CO_321:000025&location=bergheim&phenotypingCampain=2005,2006&pageSize={pageSize}&page={page}]
+Scope: CORE.
+Status: IN DISCUSSION.
+
+Use case: this section allows to get a dataset from multiple studies. It allows to integrate data from severale databases.
+
+### Phenotypes [GET]
+We probably need a better handling of the list of possible values.
+In the response, note that trait ids can either be ontology ids or URI. 
++ Parameters
+    + germplasmName (optional, text, `charger,isengrain`) ... The name or synonym of external genebank accession identifier
+    + germplasmURI (optional, text, `http://data.inra.fr/accession/234Col342`) ... The name or synonym of external genebank accession identifier
+    + germplasmLotURI (optional, text, `http://phenome-fppn.fr/maugio/lot/234Col342-2013`) ... The name or synonym of external genebank accession identifier
+    + germplasmSpecies (optional, text, `Aegilops taushi`) ... The name or synonym of genus or species ( merge with below ?)
+    + germplasmGenus (optional, text, `Triticum, Hordeum`) ... The name or synonym of genus or species
+    + panel (optional, text, `breedingProgramPanel2011`) ... The name of a specific panel 
+    + collection (optional, text, `BRCCollection_Wheat`) ... The name of a specific Collection    
+    + traits (optional, text, `CO_321:00000234`) ... The IDs of traits, could be ontology ID, database ID or URI
+    + location (optional, text, `experimental station Mons`) ... The name of a location, experimental site. Should be an ID but this would mean a dedicated service to find location IDs by name
+    + phenotypingCampain (optional, text, `2001`) ... The year or Phenotyping campaign of a multiannual study (trees, grape, ...)
+    + factorModality (optional, text, `water deficit`) ... The environment, cultural practice applied to the study subjects.
+
++ Response 200 (application/json)
+
+        {
+        "germplasmID": "http://inra.fr/vassal/41207Col0001E",
+        "level": "plot",
+        "studyId": "RIGW1",
+        "studyURI": "http://phenome-fppn.fr/maugio/2345",
+        "studyLocation": "Bergheim",
+        "studySubjectId": 20,
+        "factorModality": "water deficit",
+        "studySubjectURI": "http://phenome-fppn.fr/maugio/bloc/12/2345",
+        "levels": "Souche|10;Rang|12;Parcelle|26214;Bloc|12", /*repetition*/
+        "attributes": "att1:value, numPot;23" /*to be validated*/
+        "observations": [
+                  {
+                     "traitId": "CO_321:0000045", 
+                     "phenoCampName": "2005",
+                     "stringValue": null,
+                     "floatValue": null,
+                     "dateValue": "2005-06-12",
+                     "phenoDate": null,
+                     "quality": "reliability of the observation",
+                     "location": "phenodyne"
+                  },
+                  {
+                     "traitId": "http://www.cropontology.org/rdf/CO_321:0000025",
+                     "phenoCampName": null,
+                     "stringValue": null,
+                     "floatValue": 32,
+                     "dateValue": null,
+                     "phenoDate": "2006-07-03::10:00",
+                     "quality": "8",
+                     "location": null
+                  }
+        ]
+        },
+
+
+# Group Traits
+
+API to retrieve list and details of traits
+
+## Traits [/brapi/v1/traits]
+Scope: CORE.
+Status: IN DISCUSSION.
+
+Get list of traits
+
+### Get trait list [GET]
+
++ Response 200 (application/json)
+
+        {
+            "pagination" : { pageSize: 30, currentPage: 39, totalCount: 48484939, totalPages:34948 },
+            {
+                "traitId": "1",
+                "name": "grain yield",
+            },...
+            
+        }
+
+## Trait detail [/brapi/v1/traits/{id}]
+Scope: CORE.
+Status: IN DISCUSSION.
+
+Retrieve trait metadata
+
++ Parameters
+    + id (required, string, `464`) ... string containing id's of the traits
+
+### Retrieve selected trait description [GET]
+
++ Response 200 (application/json)
+
+        {
+            "traitId": "1",
+            "name": "plant_height",
+            "format" : "numeric",
+            "unit" : "cm",
+            "method" : "Root to tip height at maturity.",
+            "defaultValue" : "",
+            "minimum" : "",
+            "maximum": "",
+            "categories" : [ "category1", "category2" ],
+            "isVisible" : "T",
+            "realPosition" : "?"
+        }
+        
+        
+# Group Genome Maps
+Retrieving genetic or physical maps
+- type: [Genetic | Physical]
+- unit: [cM | Mb]
+- linkageGroup: may be scaffold (i.e. linkageGroupCount may consist of chromosomes or scaffolds or a combination of the two)
+- For genetic maps, map naming convention should tell whether it is a consensus or mapping population (name of population) map for genetic maps
+- For physical maps, map naming convention should tell whether it is a reference genome (name of line) or pan-genome
+
+## Genome Map  [/brapi/v1/maps?species={speciesId}&pageSize={pageSize}&page={page}&type={type}]
+
+Get list of maps
+
+do we need list of parents and specify mapping population?
+
+### Get list of maps [GET]
+
++ Response 200 (application/json)
+
+        {
+            "pagination" : { "pageSize": 30, "currentPage": 2, "totalCount": 40, "totalPages":2 },
+            "maps": [ {
+                "mapId": 1,
+                "name": "Some Map",
+                "species": "Some species",
+                "type": "Genetic",
+                "unit": "cM",
+                "publishedDate": "2008-04-16",
+                "markerCount": 1000,
+                "linkageGroupCount": 7,
+                "comments": "This map contains ..."
+                }, { 
+                "mapId": 2,
+                "name": "Some Other map",
+                "species": "Some Species",
+                "type": "Genetic",
+                "unit": "cM",
+                "publishedDate": "2009-01-12",
+                "markerCount": 1501,
+                "linkageGroupCount": 7,
+                "comments": "this is blah blah"
+                } 
+            ]
+        }
+
+## Genome Map Details [/brapi/v1/maps/{mapId}]
+
+### Get map details [GET]
+
+Provides the number of markers on each linkageGroup and the max position on the linkageGroup
+
++ Paramters
+    + mapID (required)
+    + Should we provide pagination?
+    
++ Response 200 (application/json)
+
+        {
+            "mapId": "id",
+            "name": "Some map",
+            "type": "Genetic",
+            "unit": "cM",
+            "linkageGroups": [ {
+                "linkageGroupId": 1,
+                "numberMarkers": 100000,
+                "maxPosition": 10000000
+            }, {
+                "linkageGroup": 2
+                "numberMarkers": 1247,
+                "maxPostion": 12347889
+            }
+            ]
+        }
+## Genome Map Data [/brapi/v1/maps/{mapId}?linkageGroupIdList={linkageGroupId,linkageGroupId}&pageSize={pageSize}&pageNumber={pageNumber}]
+
+### Get map data [GET]
+
+markers ordered by linkageGroup and position
+
++ Parameters
+   + mapId (required, integer, `6`) ... integer id of the map
+   + linkageGroupIdList (optional, comma separated list of strings)
+
++ Response 200 (application/json)
+
+        {
+            "pagination" : { "pageSize": 30, "currentPage": 2, "totalCount": 40, "totalPages":2 },
+            "markers": [ {
+                "markerId": 1,
+                "markerName": "marker1",
+                "location": "1000",
+                "linkageGroup": "1A"
+            }, {
+                "markerId": 2,
+                "markerName": "marker2",
+                "location": "1001",
+                "linkageGroup": "1A"
+            }
+            ]
+        }
+## Genome Map Data by range on linkageGroup [/brapi/v1/maps/{mapId}/linkageGroupId/{linkageGroupId}?min={min}&max={max}&pageSize={pageSize}&pageNumber={pageNumber}]
+
+### Get map data by range on linkageGroup [GET]
+
+markers ordered by linkageGroup and position
+
++ Parameters
+   + mapId (required, integer, `6`) ... integer id of the map
+   + linkageGroupId (required, string)
+   + min (optional) ... minimum position on linkage group
+   + max (optional) ... maximumn position on linkage group
+
++ Response 200 (application/json)
+
+        {
+            "pagination" : { "pageSize": 30, "currentPage": 2, "totalCount": 40, "totalPages":2 },
+            "markers": [ {
+                "markerId": 1,
+                "markerName": "marker1",
+                "location": "1000"
+            }, {
+                "markerId": 2,
+                "markerName": "marker2",
+                "location": "1001"
+            }
+            ]
+        }
+
+# Group DataTerminal
+Data terminal is a staging area for study data sets produced by various plant 
+breeding activities. The data terminal consists of the storage system and a 
+REST API containing resources needed to carry out the steps of a data 
+production task. It is a staging area for study datasets produced by various 
+plant breeding activities. More information may be found [here](https://github.com/plantbreeding/field-data-collection/wiki/Resources::DataTerminal "DataTerminal Resources").
+
+## Transaction [/brapi/v1/transaction/{id}?fields=id,studyName]
+Scope: OTHER.
+Status: PROPOSED.
+
+A transaction consists of the steps in the data collection (from upload to commit) and the datasets. 
+A transaction is created or updated when a study dataset is uploaded to the DataTerminal. A study can have one active transaction.
+More information may be found [here](https://github.com/plantbreeding/field-data-collection/wiki/Resources::DataTerminal "DataTerminal Resources")
+
+
+
+
+### Retrieve transactions [GET]
+Returns 1
+
++ Parameters
+    + id (required, 1) ... Id of transaction
+    + fields (optional, id&#44;studyName) ... Limits the fields returned along with the results
+
++ Request JSON Message
+    + Headers
+    
+            Accept: application/json
+            
++ Response 200 (application/json)
+
+        {
+              "type": "Success",
+              "timestamp": "2014-10-02 16:13",
+              "response": :{
+                "totalRows":1,
+                "limit":1000,
+                "offset":0,
+                "rows":[
+                    {
+                        "id":15,
+                        "studyName":"IRSEA-IRRIHQ-OYT-2014-DS-1",
+                        "recordCount":100,
+                        "invalidRecord_count":0,
+                        "status":"uploaded",
+                        "startAction_timestamp":"2014-10-01 08:11:25.938922+00",
+                        "endAction_timestamp":null,
+                        "creator":"name@some.email.com",
+                        "modifier":null,
+                        "modification_timestamp":null,
+                        "isVoid":false,
+                        "remarks":null
+                    }]
+                }
+        }
+        
+
+
+
+## All Transactions [/brapi/v1/transaction/?limit=1000&offset=0&sort=id asc&fields=id,name]
+Scope: OTHER.
+Status: SUGGESTED.
+
+### Retrieve All Transactions [GET]
+Returns 1, or 1000 (offset=0, limit=1000) transactions.
+
++ Parameters
+    + offset (optional, 0) ... Skips specified no. of rows before fetching results.
+    + limit (optional, 1000) ... Limits results to the specified count
+    + sort (optional, id&#44;asc) ... Sets the order by clause of the query
+    + fields (optional, id&#44;studyName) ... Limits the fields returned along with the results
+
++ Request JSON Message
+    + Headers
+    
+            Accept: application/json
+            
++ Response 200 (application/json)
+
+        {
+              "type": "Success",
+              "timestamp": "2014-10-02 16:13",
+              "response": :{
+                "totalRows":1,
+                "limit":1000,
+                "offset":0,
+                "rows":[
+                    {
+                        "id":15,
+                        "studyName":"IRSEA-IRRIHQ-OYT-2014-DS-1",
+                        "recordCount":100,
+                        "invalidRecord_count":0,
+                        "status":"uploaded",
+                        "startAction_timestamp":"2014-10-01 08:11:25.938922+00",
+                        "endAction_timestamp":null,
+                        "creator":"name@some.email.com",
+                        "modifier":null,
+                        "modification_timestamp":null,
+                        "isVoid":false,
+                        "remarks":null
+                    }]
+                }
+        }
+
+
+
+## Dataset [/brapi/v1/dataset/{id}?fields=id,status]
+Scope: OTHER.
+Status: SUGGESTED.
+
+A dataset is an object containing a collection of records. 
+This resource allows the manipulation of datasets that are uploaded to the data terminal.
+
+### Retrieve Dataset [GET]
+Returns 1
+
++ Parameters
+    + id (required, 1) ... Id of transaction
+    + fields (optional, id&#44;status) ... Limits the fields returned along with the results
+
++ Request JSON Message
+    + Headers
+    
+            Accept: application/json
+            
++ Response 200 (application/json)
+
+        {
+              "type": "Success",
+              "timestamp": "2014-10-02 16:13",
+              "response": :{
+                "totalRows":1,
+                "limit":1000,
+                "offset":0,
+                "rows":[
+                    {
+                        "id":1,
+                        "transactionId":"1",
+                        "inputFile":"",
+                        "status":"validated",
+                        "startAction_timestamp":"2014-10-01 08:11:25.938922+00",
+                        "endAction_timestamp":null,
+                        "creator":"name@some.email.com",
+                        "modifier":null,
+                        "modification_timestamp":null,
+                        "isVoid":false,
+                        "remarks":null
+                    }]
+                }
+        }
+
+## Record [/brapi/v1/record/{id}?fields=id,status]
+Scope: OTHER.
+Status: SUGGESTED.
+
+A record is an object that contains information about the recorded value
+(for instance an observed trait of a study plot). The required attributes are 
+the identifiers (set of attributes that makes the record unique), the variable 
+used, the value, and audit information. This resource allows external clients 
+to perform operations on records in the DataTerminal
+
+### Retrieve Record [GET]
+Returns 1
+
++ Parameters
+    + id (required, 1) ... Id of Record
+    + fields (optional, id&#44;status) ... Limits the fields returned along with the results
+
++ Request JSON Message
+    + Headers
+    
+            Accept: application/json
+            
++ Response 200 (application/json)
+
+        {
+              "type": "Success",
+              "timestamp": "2014-10-02 16:13",
+              "response": :{
+                "totalRows":1,
+                "limit":1000,
+                "offset":0,
+                "rows":[
+                    {
+                        "id":1,
+                        "transactionId":"1",
+                        "variableId":"133",
+                        "value":"5400",
+                        "dataLevel":"plot",
+                        "isDataTypeValid":"true",
+                        "isDataValueValid":"true",
+                        "status":"committed",
+                        "startAction_timestamp":"2014-10-01 08:11:25.938922+00",
+                        "endAction_timestamp":null,
+                        "creator":"name@some.email.com",
+                        "modifier":null,
+                        "modification_timestamp":null,
+                        "isVoid":false,
+                        "remarks":null
+                    }]
+                }
+        }
