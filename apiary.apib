@@ -185,6 +185,30 @@ Scope: OTHER. Status: IN DISCUSSION.
             "parent2Id" : 143
         }
 
+## Germplasm attributes [/brapi/v1/attributes?attributeCategory=2]
+Germplasm "attributes" are simply-inherited characteristics (characterization descriptors) that are not environment-dependent but 
+inherent in the germplasm line.  They include genes, QTLs, and genetic "traits" like wheat grain 
+hardness.  They are often evaluated by genotyping for diagnostic markers.
+Scope: OTHER. Status: IN DISCUSSION.
+### Germplasm attributes [GET] 
+List all available attributes.
++ Parameters
+    + attributeCategory (optional, string, `morphological`) ... filter for kind of attributes
++ Response 200 (application/json)
+
+        [
+            {
+            "attributeId": 1,
+            "code": "RHT"
+            "URI": "http://www.cropontology.org/rdf/CO_321:0000020"
+            "name: "Rht-B1b",
+            "description": "Allele of diagnostic marker 11_4769"
+            "attributeCategoryId": 2
+            "datatype": "categorical"
+            "values": ["Present", "Absent", "Heterozygous"]
+            },
+        ]
+
 ## Germplasm markerprofiles  [/brapi/v1/germplasm/{id}/markerprofiles]
 Retrieve the markerProfileIds for a given Germplasm ID  
 Scope: GENOTYPING. Status: IN DISCUSSION.
