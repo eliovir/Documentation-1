@@ -191,9 +191,8 @@ inherent in the germplasm line.  They include genes, QTLs, and genetic "traits" 
 hardness.  They are often evaluated by genotyping for diagnostic markers.
 ## List attributes available [/brapi/v1/attributes?attributeCategory=2]
 Scope: OTHER. Status: IN DISCUSSION.
-NEED: service for attributeCategory
 ### Germplasm attributes [GET] 
-List all available attributes.
+List available attributes.
 + Parameters
     + attributeCategory (optional, string, `morphological`) ... filter for kind of attributes
 + Response 200 (application/json)
@@ -213,6 +212,19 @@ List all available attributes.
             {}
         ]
         
+## List attribute categories [/brapi/v1/attributes/categories/{none}] 
+Scope: OTHER. Status: IN DISCUSSION.
+### Germplasm attribute categories [GET]
+List all available attribute categories.
++ Parameters
+    + none 
++ Response 200 (application/json)
+
+        [
+            {"id": 1, "name": "Morphological"},
+            {"id": 2, "name": "Agronomic"}
+        ]
+
 ## Germplasm attribute values by germplasmId [/brapi/v1/attributes/{germplasmId}?attributeList={attributeId},{attributeId}]
 ### Germplasm attribute values [GET]
 Values for all attributes by default.
