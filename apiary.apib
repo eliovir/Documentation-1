@@ -190,6 +190,7 @@ Germplasm "attributes" are simply-inherited characteristics (characterization de
 inherent in the germplasm line.  They include genes, QTLs, and genetic "traits" like wheat grain 
 hardness.  They are often evaluated by genotyping for diagnostic markers.
 Scope: OTHER. Status: IN DISCUSSION.
+NEED: services for attributeCategory, attributes by germplasmId (date of determination)
 ### Germplasm attributes [GET] 
 List all available attributes.
 + Parameters
@@ -199,15 +200,38 @@ List all available attributes.
         [
             {
             "attributeId": 1,
-            "code": "RHT"
-            "URI": "http://www.cropontology.org/rdf/CO_321:0000020"
-            "name: "Rht-B1b",
-            "description": "Allele of diagnostic marker 11_4769"
-            "attributeCategoryId": 2
-            "datatype": "categorical"
+            "code": "RHT",
+            "URI": "http://www.cropontology.org/rdf/CO_321:0000020",
+            "name": "Rht-B1b",
+            "description": "Allele of diagnostic marker 11_4769",
+            "attributeCategoryId": 2,
+            "attributeCategoryName": "Agronomic",
+            "datatype": "Categorical",
             "values": ["Present", "Absent", "Heterozygous"]
             },
+            {}
         ]
+        
+## Germplasm attribute values by germplasmId [/brapi/v1/attributes/{germplasmId}?attributeList={attributeId},{attributeId}]
+### Germplasm attribute values [GET]
+Values for all attributes by default.
++ Parameters
+    + germplasmId (required, string, `993`) ... The germplasm characterized
+    + attributeId (optional, integer, `1`) ... Restrict the response to only the listed attributes.
++ Response 200 (application/json)
+
+        {
+        "germplasmId": "993",
+        "values": 
+        [
+            {"attributeId": 1,
+             "attributeName": "Rht-B1b",
+             "value": "Present", 
+            "dateDetermined": "20070528"
+            },
+            {}
+        ]
+        }
 
 ## Germplasm markerprofiles  [/brapi/v1/germplasm/{id}/markerprofiles]
 Retrieve the markerProfileIds for a given Germplasm ID  
