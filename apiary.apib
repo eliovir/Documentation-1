@@ -1,7 +1,7 @@
 FORMAT: 1A
 
-# Dave's Plant Breeding API
-This is a copy snapshot on Thursday 18jun
+# Plant Breeding API
+Backup snapshot, Fri 19jun2015 2pm Pacific Time
 
 The Breeding API specifies a standard interface for plant phenotype/genotype databases to serve 
 their data to crop breeding applications. It is a <i>shared</i>, <i>open</i> API, to be
@@ -27,7 +27,7 @@ The status object contains a list of objects with the keys "code" and "message".
 
 The payload data is contained simply in the topmost object level.
 
-Additional documentation is in the [GitHub wiki](https://github.com/plantbreeding/). 
+Additional documentation is in the [GitHub wiki](https://github.com/plantbreeding/documentation/wiki). 
 See especially the [Best Practices and Conventions]
 (https://github.com/plantbreeding/documentation/wiki/Best-Practices-and-Conventions).
 
@@ -35,6 +35,80 @@ See especially the [Best Practices and Conventions]
 Scope: "CORE", "PHENOTYPING", "GENOTYPING", "OTHER".  
 Status: "ACCEPTED", "IN DISCUSSION", "SUGGESTED".
 
+# Group Authentication
+This resource refers to the authentication mechanism for the API. It is still implementation-agnostic but the structure
+should be similar across all implementations.
+
+**HTTPS** should be enforced everywhere.
+
+## Authentication [/brapi/v1/authentications]
+
+**Subject for discussion:**
+
+1. /brapi/v1/authenticate
+2. /brapi/v1/authentication
+3. /brapi/v1/authentications
+
+|Verb|Description|Remarks|
+|------|------|:-----:|
+|GET|Retrieve authentication data.|This is only allowed for the logged-in user.|
+|POST|Log in the user. The response of this call contains the **session information** necessary which may include the **access token** or other information depending on the implementation.||
+|DELETE|Log out the user. | This is only allowed for the logged-in user.|
+
+### Retrieve authentication data [GET]
++ Response 200 (application/json)
+
+        {
+            "metadata": null,
+            "authentications" : {
+                "username" : "username",
+                "provider" : "Google",
+                "session" : [
+                    "SESS13cb44e3aa3713d0cc373e81c4e33f5b",
+                    "R6gKDBRxM4HLj6eGi4u5HkQjYoIBTPfvtZzUD8TUzg4"
+                ]
+            }
+        }
+### Login [POST]
++ Request (application/json)
+
+        {
+            "username" : "username", 
+            "password": "password",
+            "provider" : "Google"
+            
+        }
++ Response 201 (application/json)
+
+        {
+            "metadata": null,
+            "session": [
+                "SESS13cb44e3aa3713d0cc373e81c4e33f5b",
+                "R6gKDBRxM4HLj6eGi4u5HkQjYoIBTPfvtZzUD8TUzg4"
+            ]
+        } 
+
++ Response 201 (application/json)
+
+        {
+            "metadata": {
+                "status": [
+                    {
+                        "code": "XXX",
+                        "message": "Bad login/password pair"
+                    }
+                ],
+                "pagination" : null
+            },
+            "session": null
+        }
+
+### Logout [DELETE]
++ Response 200 (application/json)
+
+        {
+            "metadata" : null
+        }
 
 # Group Germplasm
 Note: The plural of germplasm is germplasm. (no "s")
@@ -67,17 +141,20 @@ Scope: CORE.  Status: IN DISCUSSION.
 + Response 200 (application/json)
 
         {    
-            "metadata"  :   
-            {   
-                "pagination"    :   { "pageSize": 1000, "currentPage": 10, "totalCount": 27338, "totalPages": 28 },
-                "status"        :   [ ],
-                "queryName"     :   "mor%"
+            "metadata": {
+                "pagination": {
+                    "pageSize": 1000,
+                    "currentPage": 10,
+                    "totalCount": 27338,
+                    "totalPages": 28
+                },
+                "status": []
             },
-            "germplasm" :  [
+            "result" :  [
                 { 
                     "accessionNumber": "MOREX",
                     "synonyms" : [ "M25", "CIHO15773" ],
-                    "PUI" : "",
+                    "germplasmPUI" : "",
                     "germplasmName": "Pahang",
                     "breederCode": "01BEL084609",
                     "germplasmId": 382
@@ -85,7 +162,7 @@ Scope: CORE.  Status: IN DISCUSSION.
                 {
                     "accessionNumber": "MORGENROT",
                     "synonyms" : [ ],
-                    "PUI" : "",
+                    "germplasmPUI" : "",
                     "breederCode": "01BEL084609",
                     "germplasmId": 383
                 }
@@ -101,6 +178,9 @@ Scope: CORE. Status: IN DISCUSSION.
 |breederCode|string|Unique identifier  for germplasm in a breeding program|Y|
 |accessionNumber|string|This is the unique identifier for accessions within a genebank, and is assigned when a sample is entered into the genebank collection||
 |germplasmName|string|Name of the germplasm. It can be the prefered name and does not have to be unique||
+|germplasmPedigree|string|Cross name with optional selection history.||
+|germplasmSeedSource|string|Seed source||
+|trialId|string|Trials that this germplasm has been used in||
 |synonyms|array of string|List of other germplasm name||
 |germplasmPUI|string|Permanent identifier (e.g. URI, DOI, LSID)||
 |commonCropName|string|Common name fo the crop (e.g. wheat, rice, maize, cassava, banana)||
@@ -124,49 +204,129 @@ Scope: CORE. Status: IN DISCUSSION.
 + Response 200 (application/json)
 
         {
-        "metadata": 
-        {
-            "status": [],
-            "pagination": 
-            {
-                "pageSize": 1000,
-                "currentPage": 1,
-                "totalCount": 1,
-                "totalPages": 1
-            }
-        },
-        "germplasm": 
-        [
-            {
-                "germplasmId": "01BEL084609",
-                "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
-                "germplasmName": "Pahang",
-                "accessionNumber": "ITC0609",
-                "breederCode": "01BEL084609",
-                "synonyms": [ ],
-                "commonCropName": "banana",
-                "instituteCode": "01BEL084",
-                "instituteName": "ITC",
-                "biologicalStatusOfAccessionCode": 412,
-                "countryOfOriginCode": "UNK",
-                "typeOfGermplasmStorageCode": 10,
-                "genus": "Musa",
-                "species": "acuminata",
-                "speciesAuthority": "",
-                "subtaxa": "sp malaccensis var pahang",
-                "subtaxaAuthority": "",
-                "donors": 
+            "metadata": {
+                "status": [],
+                "pagination": {
+                    "pageSize": 1000,
+                    "currentPage": 1,
+                    "totalCount": 1,
+                    "totalPages": 1
+                }
+            },
+            "result": 
                 [
                     {
-                        "donorAccessionNumber": "",
-                        "donorInstituteCode": "",
-                        "pui": ""
+                        "germplasmId": "01BEL084609",
+                        "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
+                        "germplasmName": "Pahang",
+                        "germplasmPedigree": "TOBA97/SW90.1057",
+                        "germplasmSeedSource": "Female GID:4/Male GID:4",
+                        "trailId" : [ ],
+                        "accessionNumber": "ITC0609",
+                        "breederCode": "01BEL084609",
+                        "synonyms": [ ],
+                        "commonCropName": "banana",
+                        "instituteCode": "01BEL084",
+                        "instituteName": "ITC",
+                        "biologicalStatusOfAccessionCode": 412,
+                        "countryOfOriginCode": "UNK",
+                        "typeOfGermplasmStorageCode": 10,
+                        "genus": "Musa",
+                        "species": "acuminata",
+                        "speciesAuthority": "",
+                        "subtaxa": "sp malaccensis var pahang",
+                        "subtaxaAuthority": "",
+                        "donors": 
+                        [
+                            {
+                                "donorAccessionNumber": "",
+                                "donorInstituteCode": "",
+                                "pui": ""
+                            }
+                        ],
+                        "acquisitionDate": "19470131"
                     }
-                ],
-                "acquisitionDate": "19470131"
-            }
-        ]
+            ]
         }
+## Germplasm Details List [/brapi/v1/germplasm?trialId=123]
+Scope: CORE. Status: IN DISCUSSION.  
+###### Response data types
+|Variable|Datatype|Description|Required|  
+|------|------|------|:-----:|
+|germplasmId|string|Internal db identifier|Y|
+|breederCode|string|Unique identifier  for germplasm in a breeding program|Y|
+|trialId|string|Trials that this germplasm has been used in||
+|accessionNumber|string|This is the unique identifier for accessions within a genebank, and is assigned when a sample is entered into the genebank collection||
+|germplasmName|string|Name of the germplasm. It can be the prefered name and does not have to be unique||
+|germplasmPedigree|string|Cross name with optional selection history.||
+|germplasmSeedSource|string|Seed source||
+|synonyms|array of string|List of other germplasm name||
+|germplasmPUI|string|Permanent identifier (e.g. URI, DOI, LSID)||
+|commonCropName|string|Common name fo the crop (e.g. wheat, rice, maize, cassava, banana)||
+|instituteCode|string|Institute that has bred the material. Note: The code may consist of the 3-letter ISO 3166 country code of the country where the institute is located plus a number (e.g. COL001) as recommended by FAO WIEWS |Y|
+|instituteName|string|Name of the institute (or person) that bred the material.||
+|biologicalStatusOfAccessionCode|string|400) Breeding/research material 410) Breeder's line 411) Synthetic population 412) Hybrid 413) Founder stock/base population 414) Inbred line (parent of hybrid cultivar) 415) Segregating population 416) Clonal selection 420) Genetic stock 421) Mutant (e.g. induced/insertion mutants, tilling populations) 422) Cytogenetic stocks  423) Other genetic stocks (e.g. mapping populations)500) Advanced or improved cultivar (conventional breeding methods) 600) GMO (by genetic engineering) 999) Other||
+|countryOfOriginCode|string|3-letter ISO 3166-1 code of the country in which the sample was bred or selected (breeding lines, GMOs, segregating populations, hybrids, modern cultivars, etc.).||
+|typeOfGermplasmStorageCode|array of string|If germplasm is maintained under different types of storage, multiple choices are allowed. 10) Seed collection 11) Short term 12) Medium term 13) Long term 20) Field collection 30) In vitro collection 40) Cryopreserved collection 50) DNA collection 99) Other (elaborate in REMARKS field)||
+|genus|string|Genus name for taxon. Initial uppercase letter required.||
+|species|string|Specific epithet portion of the scientific name in lowercase letters.||
+|speciesAuthority|string|||
+|subtaxa|string|Subtaxon can be used to store any additional taxonomic identifier. The following abbreviations are allowed: ‘subsp.’ (for subspecies); ‘convar.’ (for convariety); ‘var.’ (for variety); ‘f.’ (for form); ‘Group’ (for ‘cultivar group’).|
+|subtaxaAuthority|string|||
+|donors|array of string| code of the donor institute and Identifier assigned to an accession by the donor, and permanent identifier.||
+|acquisitionDate|string|Date on which the accession entered the collection where YYYY is the year, MM is the month and DD is the day. Missing data (MM or DD) should be indicated with hyphens or ‘00’ [double zero].|
+
+### Germplasm List by trialId [GET]
++ Parameters
+    + trialId (optional, string, `123`) ... the trial database identitifer we want the filter by
+    
++ Response 200 (application/json)
+
+        {
+            "metadata": {
+                "status": [],
+                "pagination": {
+                    "pageSize": 1000,
+                    "currentPage": 1,
+                    "totalCount": 1,
+                    "totalPages": 1
+                }
+            },
+            "result": [
+                {
+                    "germplasmId": "01BEL084609",
+                    "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
+                    "germplasmName": "Pahang",
+                    "germplasmPedigree": "TOBA97/SW90.1057",
+                    "germplasmSeedSource": "Female GID:4/Male GID:4",
+                    "trailId" : [ ],
+                    "accessionNumber": "ITC0609",
+                    "breederCode": "01BEL084609",
+                    "synonyms": [ ],
+                    "commonCropName": "banana",
+                    "instituteCode": "01BEL084",
+                    "instituteName": "ITC",
+                    "biologicalStatusOfAccessionCode": 412,
+                    "countryOfOriginCode": "UNK",
+                    "typeOfGermplasmStorageCode": 10,
+                    "genus": "Musa",
+                    "species": "acuminata",
+                    "speciesAuthority": "",
+                    "subtaxa": "sp malaccensis var pahang",
+                    "subtaxaAuthority": "",
+                    "donors": 
+                    [
+                        {
+                            "donorAccessionNumber": "",
+                            "donorInstituteCode": "",
+                            "germplasmPUI": ""
+                        }
+                    ],
+                    "acquisitionDate": "19470131"
+                }
+            ]
+        }
+
         
 ## Germplasm pedigree [/brapi/v1/germplasm/{id}/pedigree?notation=purdy]
 pedigreeString: text representation of the pedigree in [Purdy notation]
@@ -179,10 +339,43 @@ Scope: OTHER. Status: IN DISCUSSION.
 + Response 200 (application/json)
     
         { 
-            "germplasmId": 382,
-            "pedigreeString" : "Cree / Bonanza",
-            "parent1Id" : 166,
-            "parent2Id" : 143
+            "metadata" : null,
+            "result" : {
+                "germplasmId": 382,
+                "pedigreeString" : "Cree / Bonanza",
+                "parent1Id" : 166,
+                "parent2Id" : 143
+            }
+        }
+
++ Response 400 (application/json)
+    
+        { 
+            "metadata" : {
+                "status" : [
+                    {
+                        "code" : "ERR-1",
+                        "description" : "Unsupported notation code."
+                    }
+                ]
+            },
+            "result": null
+        }
+
+## Germplasm markerprofiles  [/brapi/v1/germplasm/{id}/markerprofiles]
+Retrieve the markerProfileIds for a given Germplasm ID  
+Scope: GENOTYPING. Status: IN DISCUSSION.
+### Markerprofiles by germplasmId [GET]
++ Response 200 (application/json)
+        
+        {
+            "metadata" : null,
+            "result" : {
+                germplasmId : 39393,
+                markerProfiles : [
+                    3939, 4484, 3993
+                ]
+            }
         }
 
 # Group Germplasm attributes
@@ -196,32 +389,42 @@ List available attributes.
 ###### Response data types
 |Variable|Datatype|Description|Required|  
 |------|------|------|:-----:|
-|id|integer|internal DB id, not stable |Y|
+|id|integer|internal database identifier, not stable |Y|
 |code|string|abbreviation||
 |uri|string|reference to external documentation, ontology etc.||
 |name|string|for display, and stable identifier unique in the database|Y|
 |description|string|||
 |datatype|string|e.g. Categorical, Numeric, Boolean||
-|values|string|array of all possible values for this attribute||
+|values|string|array of all possible values for this attribute|Y|
 + Parameters
     + attributeCategory (optional, string, `morphological`) ... filter for kind of attributes
 + Response 200 (application/json)
 
-        [
-            {
-            "id": 1,
-            "code": "RHT",
-            "uri": "http://www.cropontology.org/rdf/CO_321:0000020",
-            "name": "Rht-B1b",
-            "description": "Allele of marker 11_4769, diagnostic for allele b of reduced-height gene Rht-B1",
-            "attributeCategoryId": 2,
-            "attributeCategoryName": "Agronomic",
-            "datatype": "Categorical",
-            "values": ["Present", "Absent", "Heterozygous"]
+        {
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10000,
+                    "totalPages": 1000
+                },
+                "status": []
             },
-            {}
-        ]
-        
+            "result" : [            
+                {
+                    "id": 1,
+                    "code": "RHT",
+                    "uri": "http://www.cropontology.org/rdf/CO_321:0000020",
+                    "name": "Rht-B1b",
+                    "description": "Allele of marker 11_4769, diagnostic for allele b of reduced-height gene Rht-B1",
+                    "attributeCategoryId": 2,
+                    "attributeCategoryName": "Agronomic",
+                    "datatype": "Categorical",
+                    "values": ["Present", "Absent", "Heterozygous"]
+                }
+            ]
+        }
+
 ## List attribute categories [/brapi/v1/attributes/categories/{none}] 
 Scope: OTHER. Status: IN DISCUSSION.
 ### Germplasm attribute categories [GET]
@@ -230,10 +433,27 @@ List all available attribute categories.
     + none 
 + Response 200 (application/json)
 
-        [
-            {"id": 1, "name": "Morphological"},
-            {"id": 2, "name": "Agronomic"}
-        ]
+        {
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
+            },
+            "result" : [
+                {
+                    "id": 1, 
+                    "name": "Morphological"
+                },
+                {
+                    "id": 2, 
+                    "name": "Agronomic"
+                }
+            ]
+        }
 
 ## Germplasm attribute values by germplasmId [/brapi/v1/attributes/{germplasmId}?attributeList={attributeId},{attributeId}]
 ### Germplasm attribute values [GET]
@@ -244,30 +464,29 @@ Values for all attributes by default.
 + Response 200 (application/json)
 
         {
-        "germplasmId": "993",
-        "values": 
-        [
-            {"attributeId": 1,
-             "attributeName": "Rht-B1b",
-             "attributeCode": "RHT",
-             "value": "Present", 
-             "dateDetermined": "20070528"
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
             },
-            {}
-        ]
-        }
-
-## Germplasm markerprofiles  [/brapi/v1/germplasm/{id}/markerprofiles]
-Retrieve the markerProfileIds for a given Germplasm ID  
-Scope: GENOTYPING. Status: IN DISCUSSION.
-### Markerprofiles by germplasmId [GET]
-+ Response 200 (application/json)
-        
-        {
-            germplasmId : 39393,
-            markerProfiles : [
-                3939, 4484, 3993
-            ],  ...
+            "result" : [
+                {
+                    "germplasmId": "993",
+                    "values": [
+                        {
+                            "attributeId": 1,
+                            "attributeName": "Rht-B1b",
+                            "attributeCode": "RHT",
+                            "value": "Present", 
+                            "dateDetermined": "20070528"
+                        }
+                    ]
+                }
+            ]
         }
 
 
@@ -290,27 +509,39 @@ Status: IN DISCUSSION.
 For the requested Germplasm Id and/or Extract Id, returns the Markerprofile Id and number of non-missing allele calls 
 (marker/allele pairs).
 [Example] (http://malt.pw.usda.gov/t3/wheatplus/brapi/v1/markerprofiles/993_83/count?analysisMethod=GoldenGate)
-### Retrieve markerprofile Id's [GET]
+### Retrieve Markerprofile Id's [GET]
 + Parameters
     + germplasmId (optional, number, `993`) ... The server's internal id for the Germplasm ID, as returned by the **Find markerprofile by Germplasm** service.
     + extractId (optional, number, `84`) ... The server's internal id for the ExtractId
 + Response 200 (application/json)
 
-        [
-            {   
-                "markerProfileId": "993",
-                "germplasmId" : 2374,
-                "extractId" : 3939,
-                "analysisMethod": "GoldenGate",
-                "resultCount": 1470
-            },{
-                "markerProfileId": "994",
-                "germplasmId" : 2374,
-                "extractId" : 3939,
-                "analysisMethod": "GBS",
-                "resultCount": 1470
-            }
-        ]
+        {
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
+            },
+            "result" : [
+                {   
+                    "markerProfileId": "993",
+                    "germplasmId" : 2374,
+                    "extractId" : 3939,
+                    "analysisMethod": "GoldenGate",
+                    "resultCount": 1470
+                },
+                {
+                    "markerProfileId": "994",
+                    "germplasmId" : 2374,
+                    "extractId" : 3939,
+                    "analysisMethod": "GBS",
+                    "resultCount": 1470
+                }
+            ]
+        }
 
 ## Markerprofile data [/brapi/v1/markerprofiles/{id}?page=&pageSize= ]
 Scope: GENOTYPING.
@@ -338,7 +569,7 @@ Alphabetically?
 |data|object|array of marker-name/score pairs|Y|
 |pagination|object|pageSize, currentPage, totalCount, totalPages|Y|
 
-### Alleles By markerprofile Id [GET]
+### Alleles By Markerprofile Id [GET]
 + Parameters
     + id (required, number, `993`) ... The server's internal id for the germplasm line, as returned by the **Find Germplasm by Name** service.
     + pageSize (optional, number, `10000`) ... The number of allele call results (marker/allele pairs) to be returned in the response. If multiple experiments are requested, some responses will contain the last results from one experiment followed by the first results from the next.
@@ -347,56 +578,95 @@ Alphabetically?
 + Response 200 (application/json)
 
         {
-            "pagination" : { pageSize: 30, currentPage: 39, totalCount: 48484939, totalPages:34948 },
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
+            },
+        
             "germplasmId": 993,
             "extractId" : 38383, 
             "markerprofileId": 37484,
             "analysisMethod": "GBS-Pst1",
             "encoding": "AA,BB,AB",
-            "data": { "marker1": "AA", "marker2":"AB", ... },
+            "data": { "marker1": "AA", "marker2":"AB" }
         }
 
 ## Markerprofile data [/brapi/v1/markerprofiles ]
 Scope: GENOTYPING.
 Status: IN DISCUSSION.
 
-## MarkerProfile allelematrix [/brapi/allelematrix?id=100,101,102]
+## MarkerProfile Allele Matrix [/brapi/allelematrix?markerprofileId=100&markerprofileId=101]
 This uses a more efficient data structure and pagination for large number of markers.
 
-### scores [GET]
-+ Paramaters
-    + id (required, string, "100, 101, 103") marker profile id
+### Scores [GET]
+
+Use GET when paramater size less than 2K
+
+|Variable|Datatype|Description|Required|  
+|-----------|------|------|:-----:|
+|markerprofileId|string, list|eg: markerprofileId1=100&markerprofileId2=101|required
+|pageSize|integer||optional
+|currentPage|integer||
+|totalCount|integer||
+|totalPages|integer||
+
 + Response 200 (application/json)
-
-        [
-            {"makerprofileId": ["id1","id2","id3"..]
-            },
-            "scores": 
-                [
-                    {"marker1":["AB,AA,AA"]},
-                    {"marker2":["AA,AB,AA"]}
-                ]
-            }
-        ]
-
-### Store markerprofile Id [POST]
-
-+ Body
 
         {
-            "extractId" : 38383, 
-            "markerprofileId": 37484,
-            "analysisMethod": "GBS-Pst1",
-            "encoding": "AA,BB,AB",
-            "data": { "marker1": "AA", "marker2":"AB", ... },
+            "metadata": {   
+                "status":[],
+                "pagination": {
+                    "pageSize": 100,
+                    "currentPage": 1,
+                    "totalCount": 1,
+                    "totalPages": 1
+                }
+            },
+            "makerprofileIds": ["markerprofileId1","markerprofileId2","markerprofileId3"],
+            "scores": { 
+                    "markerId1":["AB","AA","AA"],
+                    "markerId2":["AA","AB","AA"],
+                    "markerId3":["AB","AB","BB"]
+            }
         }
+
+
+### Scores [POST]
+
+Use GET when paramater size greater than 2K
+
+|Variable|Datatype|Description|Required|  
+|-----------|------|------|:-----:|
+|markerprofileId|string, list|eg: markerprofileId1=100&markerprofileId2=101|required
+|pageSize|integer||optional
+|currentPage|integer||
+|totalCount|integer||
+|totalPages|integer||
 
 + Response 200 (application/json)
 
-        { 
-            "germplasmId" : 994
+        {
+            "metadata": {   
+                "status": [ ],
+                "pagination": {
+                    "pageSize": 100,
+                    "currentPage": 1,
+                    "totalCount": 1,
+                    "totalPages": 1
+                }
+            },
+            "makerprofileIds": ["markerprofileId1","markerprofileId2","markerprofileId3"],
+            "scores": { 
+                    "markerId1":["AB","AA","AA"],
+                    "markerId2":["AA","AB","AA"],
+                    "markerId3":["AB","AB","BB"]
+            }
         }
-
 
 # Group Study
 
@@ -405,10 +675,15 @@ API to retrieve information about studies (trials, nurseries).
 ## Crop [/brapi/v1/crops]
 Call to retrieve a list of supported crops.
 
-### List crops [GET]
+### List Crops [GET]
 + Response 200 (application/json)
         
-        [ "rice", "wheat", "barley", "maize", "cassava"]
+        { 
+            "metadata" : null,
+            "result" : [
+                "rice", "wheat", "barley", "maize", "cassava"
+            ]
+        }
 
 ## Program [/brapi/v1/programs]
 Call to retrieve a list of programs.
@@ -417,22 +692,33 @@ Call to retrieve a list of programs.
 
 + Response 200 (application/json)
         
-        [
-            {
-                "id": "123",
-                "name": "Rice Improvement Program",
-                "crop": "rice",
-                "objective" : "Disease resistance",
-                "leadPerson" : "Dr. Henry Beachell"
+        {
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
             },
-            {
-                "id": "456",
-                "name": "Wheat Improvement Program",
-                "crop": "wheat",
-                "objective" : "Yield improvement",
-                "leadPerson" : "Dr. Norman Borlaug"
-            }
-        ]
+            "result" : [
+                {
+                    "id": "123",
+                    "name": "Rice Improvement Program",
+                    "crop": "rice",
+                    "objective" : "Disease resistance",
+                    "leadPerson" : "Dr. Henry Beachell"
+                },
+                {
+                    "id": "456",
+                    "name": "Wheat Improvement Program",
+                    "crop": "wheat",
+                    "objective" : "Yield improvement",
+                    "leadPerson" : "Dr. Norman Borlaug"
+                }
+            ]
+        }
 
 ## Study Types [/brapi/v1/studyTypes]
 
@@ -441,16 +727,27 @@ Call to retrieve the list of study types.
 ### List study types [GET]
 + Response 200 (application/json)
         
-        [
-            {
-                "name": "Nursery",
-                "description": "Description for Nursery study type"
+        {
+             "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
             },
-            {
-                "name": "Trial",
-                "description": "Description for Nursery study type"
-            }
-        ]
+            "result" : [
+                {
+                    "name": "Nursery",
+                    "description": "Description for Nursery study type"
+                },
+                {
+                    "name": "Trial",
+                    "description": "Description for Nursery study type"
+                }
+            ]
+        }
 
 ## Study Instances [/brapi/v1/study/{studyId}/instances]
 
@@ -461,16 +758,27 @@ This information is used to add the `studyInstance` parameter filter in the "get
 
 + Response 200 (application/json)
 
-        [   
-            {
-                "instanceNumber": 1,
-                "locationName" : "Zimbabwe",
+        {
+            "metadata" : {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
             },
-            {
-                "instanceNumber": 2,
-                "locationName" : "Kenya",
-            }
-        ]
+            "result" : [
+                {
+                    "instanceNumber": 1,
+                    "locationName" : "Zimbabwe",
+                },
+                {
+                    "instanceNumber": 2,
+                    "locationName" : "Kenya",
+                }
+            ]
+        }
 
 ## List Studies [/brapi/v1/studies?programId={programId}]
 Scope: CORE.
@@ -491,9 +799,10 @@ TO DO: Probably needs pagination information.
                     "currentPage": 1,
                     "totalCount": 100,
                     "totalPages": 50
-                }
+                },
+                "status" : []
             },
-            "studies": [
+            "result": [
                 {
                     "id": "123",
                     "name": "BlightResistanceinPhillipines",
@@ -535,29 +844,21 @@ Retrieve the details of the study required for field data collection
 + Response 200 (application/json)
     
         {
-            studyId: "1",
-            studyType: "trial",
-            name: "Fieldbook A",
-            objective: "Generate seeds",
-            startDate: "2014-08-01",
-            keyContact: "Mr. Plant Breeder",
-            locationName: "Ibadan",
-            designType: "RCBD",
-            traits: [ 'trait1', 'trait2'...],
-            designDetails: [ 
-                { 
-                  plotId: "11",
-                  blockId: "1",
-                  rowId: "20",
-                  columnId: "22",
-                  replication: "1",
-                  checkId: "0",
-                  germplasmId: "143",
-                  germplasmName: "ZIPA_68"
-                }, ...
-            ]
-        },
- 
+            "metadata" : null,
+            "result" : {
+                "id": "123",
+                "name": "BlightResistanceinPhillipines",
+                "objective": "Testblightresistantcultivars",
+                "type": "Trial",
+                "season": "Winter",
+                "location": "Phillipines",
+                "startDate": "2015-06-01",
+                "endDate": "2015-12-31",
+                "programName": "RiceImprovementProgram",
+                "designType": "RCBD",
+                "keyContact": "Mr.PlantBreederA"
+            }
+        }
 
 ## Layout [/brapi/v1/studies/{id}/layout]
 Scope: CORE.
@@ -571,30 +872,26 @@ Retrieve the plot layout of the study with id {id}.
 + Response 200 (application/json)
     
         {
-            "studyId": 1,
-            { 
+            "metadata" : null,
+            "result" : {
+                "studyId": 1,
                 "plotId": 11,
                 "plotName": "ZIPA_68_Ibadan_2014",
                 "blockNumber": 1,
                 "rowNumber": 20,
                 "columnNumber": 22,
                 "replicate": 1,
-                "isCheck": "T",
+                "type": "Check (or Test)",
                 "germplasmId": 143,
                 "germplasmName": "ZIPA_68"
-            }, ...
-            
-        },
- 
+            }
+        }
 
 # Group Phenotypes
 
-
 API to retrieve data (phenotype, environment variables) from studies
 
-
-
-## Phenotypes dataset [/brapi/v1/phenotypes?observationUnitLevel=plot&studyDbId=876&treatmentFactor=lowInput&germplasmGenus=&germplasmDbId&germplasmURI=http://data.inra.fr/accession/234Col342&germplasmSpecies=Triticum&panel=diversitypanel1&collection=none&observationVariables=CO_321:000034,CO_321:000025&location=bergheim&phenotypingCampaign=2005,2006&pageSize={pageSize}&page={page}]
+## Phenotypes Dataset [/brapi/v1/phenotypes?observationUnitLevel=plot&studyDbId=876&treatmentFactor=lowInput&germplasmGenus=&germplasmDbId&germplasmURI=http://data.inra.fr/accession/234Col342&germplasmSpecies=Triticum&panel=diversitypanel1&collection=none&observationVariables=CO_321:000034,CO_321:000025&location=bergheim&phenotypingCampaign=2005,2006&pageSize={pageSize}&page={page}]
 Scope: PHENOTYPING.
 Status: IN DISCUSSION.
 
@@ -605,6 +902,9 @@ location : first find all the studies for your location search parameter then in
 We probably need a better handling of the list of possible values.
 Rule of thumb : we can inject any list with less than a hundred Ids, like studyDbId. If we have more, let's try to use another filter, like species or panel for germplasm
 In the response, note that trait ids can either be ontology ids or URI. 
+
+Consider using Json LD to handle locale, for V2.
+
 + Parameters
     + germplasmURI (optional, text, `http://data.inra.fr/accession/234Col342`) ... The name or synonym of external genebank accession identifier
     + germplasmDbId (optional, text, `986`) ... The name or synonym of external genebank accession identifier
@@ -619,69 +919,77 @@ In the response, note that trait ids can either be ontology ids or URI.
     + observationUnitLevel (optional, text, `plot`) ... The type of the observationUnit. Returns only the observaton unit of the specified type; the parent levels ID can be accessed through observationUnitStructure.
  
 + Response 200 (application/json)
-        
-        "metadata":{
-            "local" : "en"
-        },
-        "observationUnits" : 
-        [
-            {
-                "studyId": "RIGW1",
-                "studyLocation": "Bergheim",
-                "studyURI": "http://phenome-fppn.fr/maugio/2345",
-                "observationUnitLevelTypes" : [ "plant","plot", "bloc"]
-                "germplasmURI": "http://inra.fr/vassal/41207Col0001E",
-                "germplasmDbId": 3425,
-                "germplasmDisplayName": "charger",
-                "observatioUnitDbId": 20,
-                "observationUnitURI": "http://phenome-fppn.fr/maugio/bloc/12/2345",
-                "treatments": 
-                [
-                    {
-                        "factor" : "water regimen" ,
-                        "modality":"water deficit"
-                    },
-                ]
-                "observationUnitLevelLabels": [ "1","26123", "1"]
-                "attributes": 
-                [
-                    {"att1" :"value"}, 
-                    {"numPot" :"23"}
-                ] 
-                "X" :"",
-                "Y" :""
-                "XLabel" :"", /*Consider using Json LD to handle local, for V2?*/
-                "YLabel" :"",
-                "observations": 
-                [
-                    {
-                        "instanceNumber" : 1 /* For data colleciton, nullable */
-                        "observationVariableId": "CO_321:0000045", 
-                        "observationVariableDbId": 35, 
-                        "season": "2005", /*phenotypingCampaignName*/
-                        "observationValue" : string, /*data type inferred from the ontology*/
-                        "observationTimeStamp": null, /*Iso Standard*/
-                        "quality": "reliability of the observation",
-                        "collectionFacilityLabel":  "phenodyne",
-                        "collector" : "userURIOrName"
-                    },
-                    {
-                        "instanceNumber" : 1 /* For data colleciton, nullable */
-                        "observationVariableId": "http://www.cropontology.org/rdf/CO_321:0000025", 
-                        "observationVariableDbId": 35, 
-                        "phenotypingCampaignName": null,
-                        "observationValue" :  32,
-                        "observationTimeStamp": "2006-07-03::10:00", /*Iso Standard*/
-                        "quality": "8",
-                        "collectionFacilityLabel": null,
-                        "colector" : "userURIOrName"
-                    }
-                ]
+
+        {
+            "metadata": {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
             },
-        ]
+            
+            "result" : [
+                {
+                    "studyId": "RIGW1",
+                    "studyLocation": "Bergheim",
+                    "studyURI": "http://phenome-fppn.fr/maugio/2345",
+                    "observationUnitLevelTypes" : [ "plant","plot", "bloc"],
+                    "germplasmURI": "http://inra.fr/vassal/41207Col0001E",
+                    "germplasmDbId": 3425,
+                    "germplasmDisplayName": "charger",
+                    "observatioUnitDbId": 20,
+                    "observationUnitURI": "http://phenome-fppn.fr/maugio/bloc/12/2345",
+                    "treatments": 
+                    [
+                        {
+                            "factor" : "water regimen" ,
+                            "modality":"water deficit"
+                        }
+                    ]
+                    "observationUnitLevelLabels": [ "1","26123", "1"],
+                    "attributes": 
+                    [
+                        {"att1" :"value"}, 
+                        {"numPot" :"23"}
+                    ] 
+                    "X" : "",
+                    "Y" : "",
+                    "XLabel" : "", 
+                    "YLabel" : "",
+                    "observations": 
+                    [
+                        {
+                            "instanceNumber" : 1, 
+                            "observationVariableId": "CO_321:0000045", 
+                            "observationVariableDbId": 35, 
+                            "season": "2005", 
+                            "observationValue" : "", 
+                            "observationTimeStamp": null, 
+                            "quality": "reliability of the observation",
+                            "collectionFacilityLabel":  "phenodyne",
+                            "collector" : "userURIOrName"
+                        },
+                        {
+                            "instanceNumber" : 1,
+                            "observationVariableId": "http://www.cropontology.org/rdf/CO_321:0000025", 
+                            "observationVariableDbId": 35, 
+                            "phenotypingCampaignName": null,
+                            "observationValue" :  32,
+                            "observationTimeStamp": "2006-07-03::10:00",
+                            "quality": "8",
+                            "collectionFacilityLabel": null,
+                            "collector" : "userURIOrName"
+                        }
+                    ]
+                }
+            ]
+        }
     
 
-## Phenotypes hierarchical, study agregated, dataset  [/brapi/v1/phenotypes/hierarchical??observationUnitLevel=plot&studyDbId=876&treatmentFactor=lowInput&germplasmGenus=&germplasmDbId&germplasmURI=http://data.inra.fr/accession/234Col342&germplasmSpecies=Triticum&panel=diversitypanel1&collection=none&observationVariables=CO_321:000034,CO_321:000025&location=bergheim&phenotypingCampaign=2005,2006&pageSize={pageSize}&page={page}]
+## Phenotypes hierarchical, study agregated, dataset  [/brapi/v1/phenotypes/hierarchical?observationUnitLevel=plot&studyDbId=876&treatmentFactor=lowInput&germplasmGenus=&germplasmDbId&germplasmURI=http://data.inra.fr/accession/234Col342&germplasmSpecies=Triticum&panel=diversitypanel1&collection=none&observationVariables=CO_321:000034,CO_321:000025&location=bergheim&phenotypingCampaign=2005,2006&pageSize={pageSize}&page={page}]
 Scope: PHENOTYPING.
 Status: IN DISCUSSION.
 ### Phenotypes/hierarchical [GET]
@@ -704,70 +1012,78 @@ In the response, note that trait ids can either be ontology ids or URI.
 
 + Response 200 (application/json)
 
-        "metadata":{
-            "local" : "en"
-        },
-        "studies":
-        [
-            {
-                "studyId": "RIGW1",
-                "studyLocation": "Bergheim",
-                "studyURI": "http://phenome-fppn.fr/maugio/2345",
-                "observationUnitLevelTypes" : [ "plant","plot", "bloc"]
-                "observationUnits" : 
-                [
-                    {
-                        "germplasmURI": "http://inra.fr/vassal/41207Col0001E",
-                        "germplasmDbId": 3425,
-                        "germplasmDisplayName": "charger",
-                        "observatioUnitDbId": 20,
-                        "observationUnitURI": "http://phenome-fppn.fr/maugio/bloc/12/2345",
-                        "treatments": 
-                        [
-                            {
-                                "factor" : "water regimen" ,
-                                "modality":"water deficit"
-                            },
-                        ]
-                        "observationUnitLevelLabels": [ "1","26123", "1"]
-                        "attributes": 
-                        [
-                            {"att1" :"value"}, 
-                            {"numPot" :"23"}
-                        ] 
-                        "X" :"",
-                        "Y" :""
-                        "XLabel" :"", /*Consider using Json LD to handle local, for V2?*/
-                        "YLabel" :"", /*Extract like levels*/
-                        "observations": 
-                        [
-                            {
-                                "instanceNumber" : 1 /* For data colleciton, nullable */
-                                "observationVariableId": "CO_321:0000045", 
-                                "observationVariableDbId": 35, 
-                                "season": "2005", /*phenotypingCampaignName*/
-                                "observationValue" : string, /*data type inferred from the ontology*/
-                                "observationTimeStamp": null, /*Iso Standard*/
-                                "quality": "reliability of the observation",
-                                "collectionFacilityLabel":  "phenodyne",
-                                "collector" : "userURIOrName"
-                            },
-                            {
-                                "instanceNumber" : 1 /* For data colleciton, nullable */
-                                "observationVariableId": "http://www.cropontology.org/rdf/CO_321:0000025", 
-                                "observationVariableDbId": 35, 
-                                "season": null,
-                                "observationValue" :  32,
-                                "observationTimeStamp": "2006-07-03::10:00", /*Iso Standard*/
-                                "quality": "8",
-                                "collectionFacilityLabel": null,
-                                "colector" : "userURIOrName"
-                            }
-                        ]
-                    },
-                ]
-            }
-        ]
+        {
+            "metadata": {
+                "pagination": {
+                    "pageSize": 10,
+                    "currentPage": 1,
+                    "totalCount": 10,
+                    "totalPages": 1
+                },
+                "status": []
+            },
+            
+            "result" : [
+                {
+                    "studyId": "RIGW1",
+                    "studyLocation": "Bergheim",
+                    "studyURI": "http://phenome-fppn.fr/maugio/2345",
+                    "observationUnitLevelTypes" : [ "plant","plot", "bloc"],
+                    "observationUnits" : 
+                    [
+                        {
+                            "germplasmURI": "http://inra.fr/vassal/41207Col0001E",
+                            "germplasmDbId": 3425,
+                            "germplasmDisplayName": "charger",
+                            "observatioUnitDbId": 20,
+                            "observationUnitURI": "http://phenome-fppn.fr/maugio/bloc/12/2345",
+                            "treatments": 
+                            [
+                                {
+                                    "factor" : "water regimen" ,
+                                    "modality":"water deficit"
+                                },
+                            ]
+                            "observationUnitLevelLabels": [ "1","26123", "1"]
+                            "attributes": 
+                            [
+                                {"att1" :"value"}, 
+                                {"numPot" :"23"}
+                            ] 
+                            "X" : "",
+                            "Y" : "",
+                            "XLabel" : "", 
+                            "YLabel" : "", 
+                            "observations": 
+                            [
+                                {
+                                    "instanceNumber" : 1,
+                                    "observationVariableId": "CO_321:0000045", 
+                                    "observationVariableDbId": 35, 
+                                    "season": "2005", 
+                                    "observationValue" : "", 
+                                    "observationTimeStamp": null,
+                                    "quality": "reliability of the observation",
+                                    "collectionFacilityLabel": "phenodyne",
+                                    "collector" : "userURIOrName"
+                                },
+                                {
+                                    "instanceNumber" : 1,
+                                    "observationVariableId": "http://www.cropontology.org/rdf/CO_321:0000025", 
+                                    "observationVariableDbId": 35, 
+                                    "season": null,
+                                    "observationValue" :  32,
+                                    "observationTimeStamp": "2006-07-03::10:00",
+                                    "quality": "8",
+                                    "collectionFacilityLabel": null,
+                                    "collector" : "userURIOrName"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]    
+        }
 
 
 
@@ -846,56 +1162,63 @@ Call to retrieve a list of traits available in the system.
             "metadata" : {
                 "pagination" : { 
                     "pageSize": 3, 
-                    "currentPage: 1, 
+                    "currentPage": 1, 
                     "totalCount": 300, 
                     "totalPages": 100 
                 }
             },
         
-            "traits" : [       
-                { 
-                    "id": "123", 
-                    "name" : "Plant Height",
-                    "description" : "Description of Plant Height",
-                    "dataType" : "Numeric",
-                    "unit" : "cm",
-                    "defaultValue" : "0",
-                    "validValues" : {
-                        "min" : "1",
-                        "max" : "100",
-                        "categories" : "N/A"
-                    }
+            "traits" : [
+                {
+                    "traitDbId": "123",
+                    "cropOntologyId": "CO:123000007",
+                    "name": "Plant Height",
+                    "description": "Description of Plant Height",
+                    "measurementMethod": "Soil to tip at maturity",
+                    "scale": {
+                        "name": "cm",
+                        "dataType": "Numeric",
+                        "validValues": {
+                            "min": "1",
+                            "max": "100",
+                            "categories": null
+                        }
+                    },
+                    "defaultValue": null
                 },
-                { 
-                    "id": "123", 
-                    "name" : "Color",
-                    "description" : "Color of the Plant",
-                    "dataType" : "Categorical",
-                    "unit" : "Does unit make sense for categorical traits?",
-                    "defaultValue" : null,
-                    "validValues" : {
-                        "min" : "N/A",
-                        "max" : "N/A",
-                        "categories" : [
-                            "Red",
-                            "Green",
-                            "Blue"
-                        ]
-                    }
+                {
+                    "traitDbId": "123",
+                    "name": "Color",
+                    "description": "Color of the Plant",                    
+                    "cropOntologyId": "CO:123000008",
+                    "measurementMethod": "Visual observation",
+                    "scale": {
+                        "name": "Color",
+                        "dataType": "Categorical",
+                        "validValues": {
+                            "min": null,
+                            "max": null,
+                            "categories": [
+                                "Red",
+                                "Green",
+                                "Blue"
+                            ]
+                        }
+                    },
+                    "defaultValue": null
                 },
-                { 
-                    "id": "123", 
-                    "name" : "Flowering Photo",
-                    "description" : "Photo taken at flowering",
-                    "dataType" : "Picture",
-                    "unit" : "Does unit make sense for picture traits?",
-                    "defaultValue" : null,
-                    "unit" : "Does unit make sense for photo traits? N/A?",
-                    "validValues" : {
-                        "min" : "N/A",
-                        "max" : "N/A",
-                        "categories" : "N/A"
-                    }
+                {
+                    "traitDbId": "123",
+                    "name": "Flowering Photo",
+                    "description": "Photo taken at flowering",
+                    "cropOntologyId": "CO:123000009",
+                    "measurementMethod": "Captured on camera",
+                    "scale": {
+                        "name": "Picture",
+                        "dataType": "Binary",
+                        "validValues": null
+                    },
+                    "defaultValue": null
                 }
             ]
         }
@@ -915,17 +1238,21 @@ Retrieve trait metadata
 + Response 200 (application/json)
 
         {
-            "traitId": "1",
-            "name": "plant_height",
-            "format" : "numeric",
-            "unit" : "cm",
-            "method" : "Root to tip height at maturity.",
-            "defaultValue" : "",
-            "minimum" : "",
-            "maximum": "",
-            "categories" : [ "category1", "category2" ],
-            "isVisible" : "T",
-            "realPosition" : "?"
+            "traitDbId": "123",
+            "cropOntologyId": "CO:123000007",
+            "name": "Plant Height",
+            "description": "Description of Plant Height",
+            "measurementMethod": "Soil to tip at maturity",
+            "scale": {
+                "name": "cm",
+                "dataType": "Numeric",
+                "validValues": {
+                    "min": "1",
+                    "max": "100",
+                    "categories": null
+                }
+            },
+            "defaultValue": null
         }
         
         
@@ -1058,7 +1385,7 @@ markers ordered by linkageGroup and position
 
 
 # Group Field Data Collection
-API calls and data structures required to enable the basic use case of collectiong measuremtn data from the fields using handheld devices.
+API calls and data structures required to enable the basic use case of collectiong measurement data from the fields using handheld devices.
 
 
 ## Observation Levels [/brapi/v1/observationLevels]
@@ -1087,8 +1414,8 @@ The main API call for field data collection, to retrieve all the observation uni
 
         [
             {
-                "uniqueIdentifier": "abc-123",
-                "germplasmId": "1",
+                "observatioUnitDbId": "abc-123",
+                "germplasmDbId": "1",
                 "germplasmName": "IR-8",
                 "pedigree": "IR-8-FP/IR-8-MP",
                 "enrtyNumber": "1",
@@ -1099,27 +1426,28 @@ The main API call for field data collection, to retrieve all the observation uni
                 "yCoordinate" : "1",
                 "replicationNumber": "1",
                 "studyInstace": "1",
-                "collectorName" : "Mr. Technician",
-                "measurements": [
+                "observations": [
                     {
-                        "measurementId": 1,
-                        "traitId": 18020,
-                        "traitName": "Plant_height",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": null
+                        "observationDbId": 1,
+                        "observationVariableId": 18020,
+                        "observationVariableName": "Plant_height",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": null
                     },
                     { 
-                        "measurementId": 2,
-                        "traitId": 51496,
-                        "traitName": "GW100_g",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": null
+                        "observationDbId": 2,
+                        "observationVariableId": 51496,
+                        "observationVariableName": "GW100_g",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": null
                     }
                 ]
             },
             {
-                "uniqueIdentifier": "abc-456",
-                "germplasmId": "2",
+                "observatioUnitDbId": "abc-456",
+                "germplasmDbId": "2",
                 "germplasmName": "IR-9",
                 "pedigree": "IR-9-FP/IR-9-MP",
                 "enrtyNumber": "2",
@@ -1130,21 +1458,22 @@ The main API call for field data collection, to retrieve all the observation uni
                 "yCoordinate" : "2",
                 "replicationNumber": "1",
                 "studyInstace": "1",
-                "collectorName" : "Mr. Technician",
-                "measurements": [
+                "observation": [
                     {
-                        "measurementId": 3,
-                        "traitId": 18020,
-                        "traitName": "Plant_height",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": null
+                        "observationDbId": 3,
+                        "observationVariableId": 18020,
+                        "observationVariableName": "Plant_height",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": null
                     },
                     {   
-                        "measurementId": 4,
-                        "traitId": 51496,
-                        "traitName": "GW100_g",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": null
+                        "observationDbId": 4,
+                        "observationVariableId": 51496,
+                        "observationVariableName": "GW100_g",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": null
                     }
                 ]
             }
@@ -1159,8 +1488,8 @@ Call to invoke for saving the measurements captured for all the observation unit
 
         [
             {
-                "uniqueIdentifier": "abc-123",
-                "germplasmId": "1",
+                "observatioUnitDbId": "abc-123",
+                "germplasmDbId": "1",
                 "germplasmName": "IR-8",
                 "pedigree": "IR-8-FP/IR-8-MP",
                 "enrtyNumber": "1",
@@ -1171,27 +1500,28 @@ Call to invoke for saving the measurements captured for all the observation unit
                 "yCoordinate" : "1",
                 "replicationNumber": "1",
                 "studyInstace": "1",
-                "collectorName" : "Mr. Technician",
-                "measurements": [
+                "observation": [
                     {
-                        "measurementId": 1,
-                        "traitId": 18020,
-                        "traitName": "Plant_height",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": "11"
+                        "observationDbId": 1,
+                        "observationVariableId": 18020,
+                        "observationVariableName": "Plant_height",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": "11"
                     },
                     {   
-                        "measurementId": 2,
-                        "traitId": 51496,
-                        "traitName": "GW100_g",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": "111"
+                        "observationDbId": 2,
+                        "observationVariableId": 51496,
+                        "observationVariableName": "GW100_g",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": "111"
                     }
                 ]
             },
             {
-                "uniqueIdentifier": "abc-456",
-                "germplasmId": "2",
+                "observatioUnitDbId": "abc-456",
+                "germplasmDbId": "2",
                 "germplasmName": "IR-9",
                 "pedigree": "IR-9-FP/IR-9-MP",
                 "enrtyNumber": "2",
@@ -1202,21 +1532,22 @@ Call to invoke for saving the measurements captured for all the observation unit
                 "yCoordinate" : "2",
                 "replicationNumber": "1",
                 "studyInstace": "1",
-                "collectorName" : "Mr. Technician",
-                "measurements": [
+                "observation": [
                     {
-                        "measurementId": 3,
-                        "traitId": 18020,
-                        "traitName": "Plant_height",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": "22"
+                        "observationDbId": 3,
+                        "observationVariableId": 18020,
+                        "observationVariableName": "Plant_height",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": "22"
                     },
                     {   
-                        "measurementId": 4,
-                        "traitId": 51496,
-                        "traitName": "GW100_g",
-                        "measurementTime" : "2015-06-16T00:53:26Z",
-                        "value": "222"
+                        "observationDbId": 4,
+                        "observationVariableId": 51496,
+                        "observationVariableName": "GW100_g",
+                        "collector" : "Mr. Technician",
+                        "observationTimeStamp" : "2015-06-16T00:53:26Z",
+                        "observationValue": "222"
                     }
                 ]
             }
@@ -1238,7 +1569,7 @@ Call to invoke for saving the measurements captured for all the observation unit
 
 API calls for retrieving observation sets and measurement data.
 
-## Observation Sets [/brapi/v1/observationSets/{id}]
+## Observation Sets [/brapi/v1/observationSets/{id}?name=""&species=""&program=""&year=""&location=""&observationSetType=""&observationUnitType=""]
 
 ### List all observation sets [GET]
 
@@ -1248,117 +1579,162 @@ API calls for retrieving observation sets and measurement data.
     + species (optional,string) - species. This could be a set of comma-separated values.
     + program (optional,string) - the program the observation set belongs to. This could be a set of comma-separated values.
     + year (optional,numeric) - the year the observation set was created. This could be a set of comma-separated values.
-    + geolocation (optional,string) - location
+    + location (optional,string) - location
     + observationSetType (optional,string) - the type of the observation set.
     + observationUnitType (optional,string) - the type of observation unit under the observation set to be returned. This could be entry, plot,etc.
 + Response 200 (application/json)
-    {
-    "metadata": {},
-    "observationSets": {
-        "observationSetId": "11",
-        "observationSetUri": "x.x.x/v1/observationSets/11",
-        "observationSetName": "Human readable name",
-        "species": [
-            {
-                "speciesName": "speciesName",
-                "speciesUri": "x.x.x/v1/species/1"
-            }
-        ],
-        "program": [
-            {
-                "programName": "programName",
-                "programUri": "x.x.x/v1/programs/1"
-            }
-        ],
-        "year": [
-            "2013",
-            "2014",
-            "2015"
-        ],
-        "location": [
-            {
-                "locationName": "locationName",
-                "locationNameUri": "x.x.x/v1/locations/1"
-            }
-        ],
-        "observationSetType": "controlled vocabulary",
-        "metadata": {
-            "description": "this is a parent list",
-            "author": "URL to user"
-        },
-        "observationData": [
-            {
-                "HARVEST_DATE": {
-                    "observationVariableUri": "x.x.x/v1/observationVariables/123",
-                    "value": "2015-06-16",
-                    "timestamp": "",
-                    "remarks": ""
-                }
-            }
-        ],
-        "childrenDatasets": [
-            {
-                "observationUnitId": "17778",
-                "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/123",
-                "parentObservationSetUri": "x.x.x/v1/observationSets/11",
-                "parentObservationUnitUri": null,
-                "germplasmId": "x.x.x/v1/germplasm/145",
+
+        {
+            "metadata": {},
+            "observationSets": {
+                "observationSetId": "11",
+                "observationSetUri": "x.x.x/v1/observationSets/11",
+                "observationSetName": "Human readable name",
+                "species": [
+                    {
+                        "speciesName": "speciesName",
+                        "speciesUri": "x.x.x/v1/species/1"
+                    }
+                ],
+                "program": [
+                    {
+                        "programName": "programName",
+                        "programUri": "x.x.x/v1/programs/1"
+                    }
+                ],
+                "year": [
+                    "2013",
+                    "2014",
+                    "2015"
+                ],
+                "location": [
+                    {
+                        "locationName": "locationName",
+                        "locationNameUri": "x.x.x/v1/locations/1"
+                    }
+                ],
+                "observationSetType": "controlled vocabulary",
                 "metadata": {
-                    "entryName": "IR 64",
-                    "entryNumber": "1"
+                    "description": "this is a parent list",
+                    "author": "URL to user"
                 },
                 "observationData": [
                     {
-                        "PLANT_HEIGHT_AVG": {
+                        "HARVEST_DATE": {
                             "observationVariableUri": "x.x.x/v1/observationVariables/123",
-                            "value": "xxx",
+                            "value": "2015-06-16",
                             "timestamp": "",
                             "remarks": ""
                         }
                     }
-                ]
-            },
-            {
-                "observationUnitId": "17779",
-                "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/15",
-                "parentObservationUnitUri": "x.x.x/v1/observationSets/17778",
-                "germplasmId": "x.x.x/v1/germplasm/145",
-                "metadata": {
-                    "plotNo": "1",
-                    "rep": "1"
-                },
-                "observationData": [
+                ],
+                "childrenDatasets": [
                     {
-                        "PLANT_HEIGHT_1": {
-                            "observationVariableUri": "x.x.x/v1/observationVariables/129",
-                            "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/15",
-                            "value": "xxx",
-                            "timestamp": "",
-                            "remarks": ""
-                        }
-                    }
-                ]
-            },
-            {
-                "observationUnitId": "17780",
-                "parentObservationUnitUri": "x.x.x/v1/observationSets/17778",
-                "germplasmId": "x.x.x/v1/germplasm/145",
-                "metadata": {
-                    "plotNo": "1",
-                    "rep": "2"
-                },
-                "observationData": [
+                        "observationUnitId": "17778",
+                        "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/123",
+                        "parentObservationSetUri": "x.x.x/v1/observationSets/11",
+                        "parentObservationUnitUri": null,
+                        "germplasmId": "x.x.x/v1/germplasm/145",
+                        "metadata": {
+                            "entryName": "IR 64",
+                            "entryNumber": "1"
+                        },
+                        "observationData": [
+                            {
+                                "PLANT_HEIGHT_AVG": {
+                                    "observationVariableUri": "x.x.x/v1/observationVariables/123",
+                                    "value": "xxx",
+                                    "timestamp": "",
+                                    "remarks": ""
+                                }
+                            }
+                        ]
+                    },
                     {
-                        "PLANT_HEIGHT_2": {
-                            "observationVariableUri": "x.x.x/v1/observationVariables/129",
-                            "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/15",
-                            "value": "xxx",
-                            "timestamp": "",
-                            "remarks": ""
-                        }
+                        "observationUnitId": "17779",
+                        "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/15",
+                        "parentObservationUnitUri": "x.x.x/v1/observationSets/17778",
+                        "germplasmId": "x.x.x/v1/germplasm/145",
+                        "metadata": {
+                            "plotNo": "1",
+                            "rep": "1"
+                        },
+                        "observationData": [
+                            {
+                                "PLANT_HEIGHT_1": {
+                                    "observationVariableUri": "x.x.x/v1/observationVariables/129",
+                                    "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/15",
+                                    "value": "xxx",
+                                    "timestamp": "",
+                                    "remarks": ""
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "observationUnitId": "17780",
+                        "parentObservationUnitUri": "x.x.x/v1/observationSets/17778",
+                        "germplasmId": "x.x.x/v1/germplasm/145",
+                        "metadata": {
+                            "plotNo": "1",
+                            "rep": "2"
+                        },
+                        "observationData": [
+                            {
+                                "PLANT_HEIGHT_2": {
+                                    "observationVariableUri": "x.x.x/v1/observationVariables/129",
+                                    "observationUnitTypeUri": "x.x.x/v1/observationUnitTypes/15",
+                                    "value": "xxx",
+                                    "timestamp": "",
+                                    "remarks": ""
+                                }
+                            }
+                        ]
                     }
                 ]
             }
-        ]
-    }
-}
+        }
+        
+        
+# Group Locations
+
+## List [/brapi/v1/locations]
+
+Get a list of locations.
+
+* The `countryCode` is as per [ISO_3166-1_alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) spec.
+* `altitude` is in meters.
+
+### List locations [GET]
+
++ Response 200 (application/json)
+        
+        {
+            "metadata": {
+                "pageNumber": 1,
+                "pageSize": 2,
+                "totalCount": 100,
+                "totalPages": 50
+            },
+            "locations": [
+                {
+                    "locationDbId": 1,
+                    "name": "Ibadan",
+                    "countryCode": "NGA",
+                    "countryName": "Nigeria",
+                    "latitude": -21.5,
+                    "longitude": 165.5,
+                    "altitude": 12
+                },
+                {
+                    "locationDbId": 2,
+                    "name": "Goa",
+                    "countryCode": "IND",
+                    "countryName": "India",
+                    "latitude": 28.36,
+                    "longitude": 77.12,
+                    "altitude": 10
+                }
+            ]
+        }
+        
