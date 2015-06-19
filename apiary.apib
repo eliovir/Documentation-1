@@ -193,17 +193,27 @@ hardness.  They are often evaluated by genotyping for diagnostic markers.
 Scope: OTHER. Status: IN DISCUSSION.
 ### Germplasm attributes [GET] 
 List available attributes.
+###### Response data types
+|Variable|Datatype|Description|Required|  
+|------|------|------|:-----:|
+|id|integer|internal DB id, not stable |Y|
+|code|string|abbreviation||
+|uri|string|reference to external documentation, ontology etc.||
+|name|string|for display, and stable identifier unique in the database|Y|
+|description|string|||
+|datatype|string|e.g. Categorical, Numeric, Boolean||
+|values|string|array of all possible values for this attribute||
 + Parameters
     + attributeCategory (optional, string, `morphological`) ... filter for kind of attributes
 + Response 200 (application/json)
 
         [
             {
-            "attributeId": 1,
+            "id": 1,
             "code": "RHT",
-            "URI": "http://www.cropontology.org/rdf/CO_321:0000020",
+            "uri": "http://www.cropontology.org/rdf/CO_321:0000020",
             "name": "Rht-B1b",
-            "description": "Allele of diagnostic marker 11_4769",
+            "description": "Allele of marker 11_4769, diagnostic for allele b of reduced-height gene Rht-B1",
             "attributeCategoryId": 2,
             "attributeCategoryName": "Agronomic",
             "datatype": "Categorical",
