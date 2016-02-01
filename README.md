@@ -8,4 +8,4 @@ The Plant Breeding API is documented on the Apiary site and in the Github reposi
 * [Best Practices](https://github.com/plantbreeding/documentation/wiki/Best-Practices-and-Conventions)
 * [Apiary site](http://docs.breeding.apiary.io)
 * [API Implementations](https://github.com/plantbreeding/field-data-collection/wiki/API-Implementations)
-* [Use Cases and User Stories](https://github.com/plantbreeding/documentation/wiki/Use-Cases)
+* [Use Cases and User Stories](https://github.com/plantbreeding/documentation/wiki/Use-Cases-and-User-Stories)
