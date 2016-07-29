@@ -12,3 +12,4 @@ The Plant Breeding API is documented on the Apiary site and in the Github reposi
 * [Use Cases and User Stories](https://github.com/plantbreeding/documentation/wiki/Use-Cases-and-User-Stories)
   * [Field data collection user stories](https://github.com/plantbreeding/Documentation/wiki/Field-Data-Collection-Use-Cases)
 * [Flapjack (Genotype Visualization) BrAPI Steps](https://github.com/plantbreeding/documentation/wiki/Flapjack-(Genotype-Visualization)-BrAPI-Steps)
+* [Field data collection and Data analysis review of Brapi calls](https://github.com/plantbreeding/Documentation/wiki/Field-data-collection-and-Data-analysis-review-of-Brapi-calls)
